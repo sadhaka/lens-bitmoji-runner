@@ -47,6 +47,19 @@ export class GameManager extends BaseScriptComponent {
     ]);
     var update = this.createEvent('UpdateEvent');
     update.bind((e) => this.onUpdate(e.getDeltaTime()));
+
+    // Tap anywhere to start / restart whenever we're not already playing.
+    // This is the authoritative start path (a "TAP TO PLAY" prompt should react
+    // to a tap anywhere, not only a button rect), and it rides the global touch
+    // system so it doesn't depend on a UI element's hit-area. The Start/Restart
+    // button InteractionComponents remain wired as an equivalent path; firing
+    // both on one tap is harmless (startGame just re-runs the same reset).
+    var tap = this.createEvent('TapEvent');
+    tap.bind(() => {
+      if (this.state !== GameState.Playing) {
+        this.startGame();
+      }
+    });
   }
 
   /** Start OR restart - the same reset path, so "restart in-lens" is free. */

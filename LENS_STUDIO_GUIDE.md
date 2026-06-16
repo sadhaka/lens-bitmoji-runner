@@ -102,8 +102,12 @@ can name all four panels.
    (if one isn't already attached).
 5. Click the Animation Player's clip list. Bitmoji 3D ships a library of named
    animation clips. **Note the exact clip names** for a run-style, jump-style,
-   hit/stumble-style, and idle-style animation (e.g. something like `run`,
-   `jump`, `hit`, `idle` — names vary by the Bitmoji set you added).
+   hit/stumble-style, and idle-style animation, then type those names into the
+   `PlayerController` clip fields (`runClip` / `jumpClip` / `hitClip` /
+   `idleClip`). Names vary by the Bitmoji set — common ones are `idle`, `run`,
+   `jump` (use `stumble` for the hit clip if there's no `hit`). Snap's official
+   *Bitmoji Runner* tutorial imports `Left` / `Run` / `Right` clips for
+   strafe-style movement; you only need a forward run + jump + idle here.
 
 **✓ Checkpoint:** a Bitmoji named `Player` is visible in Preview, with an
 Animation Player component and at least one playable clip.
@@ -295,8 +299,9 @@ The brief asks for both a **recording** and a **published lens with a Snapcode**
    (on lensstudio's web dashboard) shows the **Snapcode** + a shareable link.
    Scan the Snapcode in Snapchat to open the lens.
 
-> Keep the lens under the **~4 MB** publish limit — the simple primitive
-> obstacles + one Bitmoji keep you well under it.
+> Keep the lens **under ~8 MB** (Snap's recommended ceiling) — the simple
+> primitive obstacles + one Bitmoji keep you well under it. Review is usually
+> a few hours; you get an email when it goes Live / Rejected / Invalid.
 
 **✓ Checkpoint:** you have (a) a recorded video and (b) a published lens with a
 Snapcode/link to share with the recruiter.
