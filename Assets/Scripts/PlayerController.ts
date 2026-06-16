@@ -3,12 +3,14 @@
  *
  * Owns the avatar's lane position, the jump arc, and which animation clip plays.
  * Deliberately "dumb" about game rules: it exposes jump()/moveLane() commands and
- * laneIndex/isAirborne state. InputController drives it; CollisionSystem reads it.
- * It never knows about score or lives.
+ * lane/height state. InputController drives it; CollisionSystem reads it. It never
+ * knows about score or lives.
  *
  * Motion is frame-independent (uses dt) and done with manual lerps rather than the
  * Tween Manager so the project has zero extra-prefab setup - a reviewer can clone,
- * open, and run it. (Tween Manager would be a drop-in alternative; see ARCHITECTURE.)
+ * open, and run it. (Tween Manager is a documented drop-in alternative; see
+ * ARCHITECTURE.) The jump exposes a real HEIGHT (heightAboveGround), not just an
+ * "airborne" flag, so collision can judge whether you actually cleared an obstacle.
  */
 import { GameConfig } from './GameConfig';
 
@@ -34,6 +36,10 @@ export class PlayerController extends BaseScriptComponent {
   private baseY = 0;
   private isJumping = false;
   private jumpTimer = 0;
+  private running = false;
+  // One reused delayed event for the hit-recoil -> run return (created once,
+  // not per hit, so rapid hits don't pile up stale callbacks).
+  private hitReturnEvent: DelayedCallbackEvent;
 
   onAwake(): void {
     this.tf = this.getTransform();
@@ -42,6 +48,14 @@ export class PlayerController extends BaseScriptComponent {
     this.baseY = p.y;
     // snap to the centre lane immediately
     this.tf.setLocalPosition(new vec3(this.laneX(this.laneIndex), this.baseY, p.z));
+
+    this.hitReturnEvent = this.createEvent('DelayedCallbackEvent');
+    this.hitReturnEvent.bind(() => {
+      // only resume the run if a run is actually in progress (not after game over)
+      if (this.running) {
+        this.play(this.runClip);
+      }
+    });
   }
 
   // ---- commands (called by InputController) ------------------------------
@@ -51,7 +65,7 @@ export class PlayerController extends BaseScriptComponent {
     }
     this.isJumping = true;
     this.jumpTimer = 0;
-    this.play(this.jumpClip, false);
+    this.play(this.jumpClip);
   }
 
   moveLane(direction: number): void {
@@ -61,15 +75,17 @@ export class PlayerController extends BaseScriptComponent {
 
   // ---- lifecycle from the GameManager game loop --------------------------
   startRun(): void {
-    this.play(this.runClip, true);
+    this.running = true;
+    this.play(this.runClip);
   }
 
   reset(): void {
+    this.running = false;
     this.isJumping = false;
     this.jumpTimer = 0;
     this.laneIndex = Math.floor(GameConfig.laneCount / 2);
     this.tf.setLocalPosition(new vec3(this.laneX(this.laneIndex), this.baseY, this.tf.getLocalPosition().z));
-    this.play(this.idleClip, true);
+    this.play(this.idleClip);
   }
 
   /** Advance lane-strafe + jump arc. Called each PLAYING frame by GameManager. */
@@ -88,7 +104,7 @@ export class PlayerController extends BaseScriptComponent {
       var t = this.jumpTimer / GameConfig.jumpDuration;
       if (t >= 1) {
         this.isJumping = false;
-        this.play(this.runClip, true);
+        this.play(this.runClip);
       } else {
         // 4*h*t*(1-t) is a clean 0->h->0 arc
         newY = this.baseY + 4 * GameConfig.jumpHeight * t * (1 - t);
@@ -100,10 +116,8 @@ export class PlayerController extends BaseScriptComponent {
 
   /** Play the recoil clip, then return to running. Called on a non-fatal hit. */
   playHitReaction(): void {
-    this.play(this.hitClip, false);
-    var ev = this.createEvent('DelayedCallbackEvent');
-    ev.bind(() => this.play(this.runClip, true));
-    ev.reset(0.4);
+    this.play(this.hitClip);
+    this.hitReturnEvent.reset(0.4); // re-arms the single delayed event
   }
 
   // ---- read-only state (for CollisionSystem) -----------------------------
@@ -113,6 +127,15 @@ export class PlayerController extends BaseScriptComponent {
   get isAirborne(): boolean {
     return this.isJumping;
   }
+  /** How high above the running ground the avatar is right now (cm). */
+  get heightAboveGround(): number {
+    return this.tf.getLocalPosition().y - this.baseY;
+  }
+  /** World-space Z, so collision can compare against obstacles regardless of
+   *  which parent each lives under (no "both sit at z=0" assumption). */
+  get worldZ(): number {
+    return this.tf.getWorldPosition().z;
+  }
 
   // ---- helpers -----------------------------------------------------------
   private laneX(index: number): number {
@@ -120,7 +143,7 @@ export class PlayerController extends BaseScriptComponent {
     return (index - mid) * GameConfig.laneWidth;
   }
 
-  private play(clip: string, _loop: boolean): void {
+  private play(clip: string): void {
     if (this.animationPlayer && clip) {
       // playClip plays by name; clip loop/weight is configured on the clip asset
       this.animationPlayer.playClip(clip);

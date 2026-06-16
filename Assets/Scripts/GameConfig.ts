@@ -33,6 +33,7 @@ export const GameConfig = {
   minSpawnInterval: 0.42, // s floor as difficulty climbs
   spawnIntervalRampPerSecond: 0.012, // s shaved off the interval each second
   pickupChance: 0.34, // probability a spawn is a points pickup vs an obstacle
+  maxSpawnsPerFrame: 3, // bound the catch-up loop after a frame hitch
 
   // ---- Jump --------------------------------------------------------------
   jumpHeight: 70, // cm apex
@@ -45,6 +46,12 @@ export const GameConfig = {
   // ---- Collision ---------------------------------------------------------
   hitDistanceZ: 55, // cm: how close in Z counts as "at the player"
   pickupRadius: 70, // cm: generous grab radius
+  // Height profile: the player clears an obstacle by being at least this high
+  // above the ground (i.e. mid-jump). Below jumpHeight, so a well-timed jump
+  // clears it; a tall barrier would set a clearHeight above jumpHeight to force
+  // a lane change instead. This is what makes "jump over vs. dodge" data, not a
+  // hard-coded boolean (see CollisionSystem).
+  obstacleClearHeight: 42, // cm
 
   // ---- Object pool -------------------------------------------------------
   poolSizeObstacles: 8,

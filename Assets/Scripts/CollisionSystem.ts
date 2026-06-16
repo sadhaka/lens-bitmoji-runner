@@ -1,19 +1,26 @@
 /**
  * CollisionSystem - decides when the player touches an obstacle or pickup.
  *
- * Deliberately a MANUAL lane + Z-distance test, not the physics ColliderComponent.
- * For a 3-lane runner that is the right call: it is deterministic, needs zero
- * physics-layer/collision-matrix setup (so the repo clones-and-runs), and is
- * trivially readable - exactly what a reviewer wants to see reasoned about. The
- * ColliderComponent.onOverlapEnter route is a documented alternative in
- * ARCHITECTURE.md for when 3D shapes get irregular.
+ * Deliberately a MANUAL test, not the physics ColliderComponent. For a lane runner
+ * that is the right call: deterministic, zero physics-layer/collision-matrix setup
+ * (so the repo clones-and-runs), and trivially readable. The ColliderComponent
+ * route is a documented alternative in ARCHITECTURE.md for irregular 3D shapes.
  *
- * Reads the spawner's active set + the player's lane/airborne state each frame and
- * emits playerHit / pickupCollected. It owns a short invulnerability window so a
- * single obstacle can't drain two lives across consecutive frames.
+ * The test has three axes, not two:
+ *   - LANE     : same lane as the player;
+ *   - DEPTH    : within hitDistanceZ in WORLD Z (so the player + obstacles can sit
+ *                under different parents without a hidden "both at z=0" assumption);
+ *   - HEIGHT   : the player's current height vs. the obstacle's clearHeight. Jump
+ *                high enough and you pass over it. This makes "jump over vs. must
+ *                dodge" a property of the obstacle (its clearHeight), not a global
+ *                boolean - so low hurdles and tall barriers are a data change, not
+ *                a code change.
+ *
+ * Runs each frame AFTER movement (GameManager order). It owns a short
+ * invulnerability window so one obstacle can't drain two lives across frames.
  */
 import { GameConfig } from './GameConfig';
-import { GameEvents, PickupPayload } from './GameEvents';
+import { GameEvents, PickupPayload, releaseOnDestroy } from './GameEvents';
 import { ObstacleSpawner, ActiveEntry } from './ObstacleSpawner';
 import { PlayerController } from './PlayerController';
 
@@ -27,10 +34,12 @@ export class CollisionSystem extends BaseScriptComponent {
   private invulnerability = 0;
 
   onAwake(): void {
-    GameEvents.on('gameReset', () => (this.invulnerability = 0));
+    releaseOnDestroy(this, [
+      GameEvents.on('gameReset', () => (this.invulnerability = 0)),
+    ]);
   }
 
-  /** Called each PLAYING frame by GameManager, after the spawner has moved. */
+  /** Called each PLAYING frame by GameManager, after everything has moved. */
   check(dt: number): void {
     if (this.invulnerability > 0) {
       this.invulnerability -= dt;
@@ -38,13 +47,13 @@ export class CollisionSystem extends BaseScriptComponent {
 
     var active: ActiveEntry[] = this.spawner.getActive();
     var playerLane = this.player.currentLane;
-    var airborne = this.player.isAirborne;
+    var playerHeight = this.player.heightAboveGround;
+    var playerZ = this.player.worldZ;
 
     var i;
     for (i = active.length - 1; i >= 0; i -= 1) {
       var e = active[i];
-      var z = e.transform.getLocalPosition().z; // player sits at z ~ 0
-      var dz = Math.abs(z);
+      var dz = Math.abs(e.transform.getWorldPosition().z - playerZ);
 
       if (e.kind === 'pickup') {
         if (e.lane === playerLane && dz <= GameConfig.pickupRadius) {
@@ -56,12 +65,12 @@ export class CollisionSystem extends BaseScriptComponent {
         continue;
       }
 
-      // obstacle: same lane, in range, and the player is NOT jumping over it
+      // obstacle: same lane, in depth range, and NOT cleared by jumping high enough
       if (
         this.invulnerability <= 0 &&
         e.lane === playerLane &&
-        !airborne &&
-        dz <= GameConfig.hitDistanceZ
+        dz <= GameConfig.hitDistanceZ &&
+        playerHeight < e.clearHeight
       ) {
         this.spawner.consume(e);
         this.invulnerability = GameConfig.hitInvulnerability;

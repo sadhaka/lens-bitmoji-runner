@@ -9,32 +9,41 @@ chose **against**, with the conditions under which I'd flip each call.
 
 ## 1. The core problem: order matters in a runner
 
-A runner does four things every frame, and they have a hard ordering:
+A runner does several things every frame, and they have a hard ordering:
 
 1. advance time / difficulty,
-2. spawn and scroll obstacles,
-3. test the player against them,
-4. update score + the avatar.
+2. **move** the player (strafe + jump) **and** scroll the obstacles,
+3. **then** test the player against them,
+4. then score survival.
 
-If collision runs *before* the spawner has moved the obstacles, you test stale
-positions and get phantom hits or missed ones. So frame order is not a detail —
-it's a correctness requirement.
+Order is a correctness requirement, in two ways:
+
+- **Move before collide.** If collision runs before the player and obstacles have
+  moved this frame, you test *this* frame's obstacle positions against *last*
+  frame's player — the classic "I clearly dodged that and still got hit" desync.
+  So all movement happens first, then collision reads fresh positions.
+- **Stop scoring the instant the run ends.** Collision can end the game
+  mid-frame (3rd hit). After `collision.check`, the loop re-checks the state and
+  bails before awarding survival points for a frame the player didn't survive.
 
 ### Decision: one game loop, not many
 
 Lens Studio lets every `ScriptComponent` bind its own `UpdateEvent`, but **it
-does not guarantee the order those events fire in.** Relying on that order is a
-classic source of intermittent, un-debuggable bugs.
+does not guarantee the order those events fire in** — and Lens Studio 5.19
+explicitly stopped guaranteeing relative `UpdateEvent` order as a lifecycle
+optimization. Relying on that order is a classic source of intermittent,
+un-debuggable bugs.
 
 So there is exactly **one** `UpdateEvent`, in `GameManager`, and it calls the
-systems explicitly in the order above:
+systems explicitly in order:
 
 ```ts
-difficulty.tick(dt);
-spawner.tickGame(dt, difficulty.currentSpeed, difficulty.currentSpawnInterval);
-collision.check(dt);
-score.tickDistance(dt);
-player.tickGame(dt);
+difficulty.tick(dt);              // 1. advance pace
+player.tickGame(dt);              // 2. move...
+spawner.tickGame(dt, speed, iv);  //    ...everything
+collision.check(dt);              // 3. collide against fresh positions
+if (state !== Playing) return;    //    a fatal hit ended the run -> stop
+score.tickDistance(dt);           // 4. reward survival
 ```
 
 The ordering is now *visible in one place* and impossible to get wrong by
@@ -88,6 +97,23 @@ subscriber can't corrupt the dispatch loop or take down the frame.
 commands. Rejected — it makes the call graph invisible and turns a simple
 "who jumps the player?" into a bus-archaeology exercise.
 
+### Lifecycle safety — the bus must not outlive its subscribers
+
+A module-singleton bus has one sharp edge on Lens Studio: it lives in the JS
+module cache, which **survives a Lens live-reload or camera swap** even as the
+scene's components are destroyed and re-created. A component that subscribes in
+`onAwake` and never unsubscribes leaves the bus holding a reference to a dead
+component — which then fires twice (double life loss, duplicate score) and
+eventually throws *"object is destroyed."*
+
+So `GameEvents.on()` returns an **unsubscribe handle**, and every subscriber
+passes its handles to `releaseOnDestroy(this, [...])`, which binds them to the
+component's `OnDestroyEvent`. When Lens Studio tears the component down, the bus
+lets go. (Our in-game *restart* does **not** destroy components — it just resets
+state — so handlers correctly persist across restarts and are released only on a
+real teardown.) This is the kind of platform-specific lifecycle detail that
+separates "works in the editor once" from "ships."
+
 ---
 
 ## 3. Collision: manual lane + Z test, not the physics engine
@@ -96,9 +122,23 @@ This is the decision most worth defending, so here it is in full.
 
 Lens Studio ships a real physics layer (`ColliderComponent` +
 `Physics.WorldComponent`, with `onOverlapEnter` callbacks). I deliberately did
-**not** use it. The runner uses a manual test in `CollisionSystem`: an entity
-collides when it's **in the player's lane**, **within `hitDistanceZ` in Z**, and
-(for obstacles) **the player isn't mid-jump**.
+**not** use it. The runner uses a manual test in `CollisionSystem` with three
+axes: an obstacle collides when it's **in the player's lane**, **within
+`hitDistanceZ` in world Z**, and **the player's current height is below the
+obstacle's `clearHeight`** (i.e. they didn't jump high enough to clear it).
+
+Two refinements over a naive version:
+
+- **Height is a number, not a boolean.** Early on this was a flat "is the player
+  mid-jump?" flag — but that makes 1%-into-a-jump and 99%-through identical, and
+  it can't express "low hurdle you jump vs. tall barrier you must dodge." So each
+  obstacle carries a `clearHeight`, and the test compares it against the avatar's
+  actual `heightAboveGround` off the jump arc. Verticality becomes **data**: a
+  taller barrier is a bigger number, not new code.
+- **World Z, not assumed-zero local Z.** The player and the spawned obstacles can
+  live under different parents in the scene. Comparing each one's *world* Z
+  removes a hidden "everything sits at z = 0 in the same space" assumption that
+  would silently break if someone re-parented the rig.
 
 Why manual wins *for this game*:
 
@@ -138,6 +178,14 @@ hidden instance and `release()` disables it back to a free list. **Zero
 allocation in the steady state.** Pool sizes (`poolSizeObstacles`,
 `poolSizePickups`) live in `GameConfig`; the pool grows gracefully if ever
 exhausted, but is sized so it won't be.
+
+**On `enabled` vs. parking off-screen:** toggling `SceneObject.enabled` walks the
+child transforms and fires `onEnable`/`onDisable`, so for *very large* pools some
+projects instead park inactive instances far off-screen and leave them enabled.
+With a 14-object pool that cost is negligible and `enabled` keeps inactive
+objects genuinely inert (no stray ticking/rendering), so it's the right call
+here — parking is the documented escape hatch if the pool ever grows by an order
+of magnitude.
 
 ---
 

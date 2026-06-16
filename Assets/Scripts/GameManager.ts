@@ -3,15 +3,20 @@
  *
  * Why one loop here instead of each system binding its own UpdateEvent: Lens
  * Studio does not guarantee the order multiple UpdateEvents fire in, and a runner
- * needs spawn -> move -> collide -> score in that exact order each frame. So this
- * is the single UpdateEvent and it calls the systems explicitly. Everything else
- * talks over the event bus.
+ * needs its steps to run in a fixed order each frame. So this is the single
+ * UpdateEvent and it calls the systems explicitly. Everything else talks over the
+ * event bus.
+ *
+ * Frame order (deliberate): advance time, MOVE everything, THEN test collisions
+ * against those fresh positions, then score. Testing collisions before movement
+ * would compare this frame's obstacles against last frame's player - a subtle
+ * "hit something I dodged" desync. Move-then-collide removes it.
  *
  * Lives live here (the task: 3 hits -> game over). Restart is just startGame()
  * again - it resets every system in place, so the lens never reloads.
  */
 import { GameConfig } from './GameConfig';
-import { GameEvents, LifeLostPayload } from './GameEvents';
+import { GameEvents, LifeLostPayload, releaseOnDestroy } from './GameEvents';
 import { DifficultyCurve } from './DifficultyCurve';
 import { PlayerController } from './PlayerController';
 import { ObstacleSpawner } from './ObstacleSpawner';
@@ -37,7 +42,9 @@ export class GameManager extends BaseScriptComponent {
   private lastScore = 0;
 
   onAwake(): void {
-    GameEvents.on('playerHit', () => this.onPlayerHit());
+    releaseOnDestroy(this, [
+      GameEvents.on('playerHit', () => this.onPlayerHit()),
+    ]);
     var update = this.createEvent('UpdateEvent');
     update.bind((e) => this.onUpdate(e.getDeltaTime()));
   }
@@ -63,16 +70,26 @@ export class GameManager extends BaseScriptComponent {
     if (this.state !== GameState.Playing) {
       return;
     }
-    // the fixed, ordered game loop
+
+    // 1) advance pace
     this.difficulty.tick(dt);
+
+    // 2) MOVE everything to this frame's positions
+    this.player.tickGame(dt);
     this.spawner.tickGame(
       dt,
       this.difficulty.currentSpeed,
       this.difficulty.currentSpawnInterval
     );
+
+    // 3) test collisions against those fresh positions (may end the game)
     this.collision.check(dt);
+    if (this.state !== GameState.Playing) {
+      return; // a fatal hit ended the run this frame - don't keep scoring
+    }
+
+    // 4) reward survival
     this.score.tickDistance(dt);
-    this.player.tickGame(dt);
   }
 
   private onPlayerHit(): void {

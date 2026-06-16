@@ -12,6 +12,7 @@ import {
   GameEvents,
   LifeLostPayload,
   ScoreChangedPayload,
+  releaseOnDestroy,
 } from './GameEvents';
 import { GameManager } from './GameManager';
 
@@ -30,11 +31,13 @@ export class UIController extends BaseScriptComponent {
   @input gameManager: GameManager;
 
   onAwake(): void {
-    GameEvents.on('scoreChanged', (p: ScoreChangedPayload) => this.setScore(p.score));
-    GameEvents.on('lifeLost', (p: LifeLostPayload) => this.setLives(p.livesRemaining));
-    GameEvents.on('gameStart', () => this.onGameStart());
-    GameEvents.on('gameOver', () => this.onGameOver());
-    GameEvents.on('gameReset', () => this.onReset());
+    releaseOnDestroy(this, [
+      GameEvents.on('scoreChanged', (p: ScoreChangedPayload) => this.setScore(p.score)),
+      GameEvents.on('lifeLost', (p: LifeLostPayload) => this.setLives(p.livesRemaining)),
+      GameEvents.on('gameStart', () => this.onGameStart()),
+      GameEvents.on('gameOver', () => this.onGameOver()),
+      GameEvents.on('gameReset', () => this.onReset()),
+    ]);
 
     if (this.startButton) {
       this.startButton.onTouchStart.add(() => this.gameManager.startGame());

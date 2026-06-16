@@ -4,12 +4,17 @@
  * Two sources of score: passive survival (distancePointsPerSecond) and pickups
  * (pickupCollected events). It never touches the UI - it just emits
  * `scoreChanged`, and the UIController paints it. Single responsibility.
+ *
+ * Note on allocation: `scoreChanged` is emitted only when a whole point is
+ * committed (a few times a second), not on every frame - so the decoupling
+ * through the bus costs effectively nothing here.
  */
 import { GameConfig } from './GameConfig';
 import {
   GameEvents,
   PickupPayload,
   ScoreChangedPayload,
+  releaseOnDestroy,
 } from './GameEvents';
 
 @component
@@ -18,10 +23,12 @@ export class ScoreManager extends BaseScriptComponent {
   private distanceAccumulator = 0;
 
   onAwake(): void {
-    GameEvents.on('gameReset', () => this.reset());
-    GameEvents.on('pickupCollected', (p: PickupPayload) =>
-      this.add(p ? p.points : GameConfig.pickupPoints)
-    );
+    releaseOnDestroy(this, [
+      GameEvents.on('gameReset', () => this.reset()),
+      GameEvents.on('pickupCollected', (p: PickupPayload) =>
+        this.add(p ? p.points : GameConfig.pickupPoints)
+      ),
+    ]);
   }
 
   /** Called by the GameManager game-loop each playing frame. */

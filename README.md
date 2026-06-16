@@ -131,8 +131,9 @@ without rewrites — each is a new subscriber or a new `GameConfig` block, not a
 surgery:
 
 - a **sound system** that subscribes to `pickupCollected` / `lifeLost`;
-- **obstacle variety** (low = jump, tall = strafe) via a `kind` field on the
-  spawn — the spawner and collision test already key off per-entry data;
+- **obstacle variety** — the collision test already reads a per-obstacle
+  `clearHeight`, so "low hurdle you jump / tall barrier you dodge" is just a
+  spawn-time number; a symmetric *slide-under* is the same idea inverted;
 - a **near-miss bonus** read straight off the existing distance check;
 - **haptics** and a **combo multiplier**, both pure subscribers.
 

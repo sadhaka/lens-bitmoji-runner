@@ -10,7 +10,7 @@
  * It does NOT decide what a collision means - it just owns the active set and
  * exposes it (getActive) to the CollisionSystem, plus consume() so collisions can
  * remove a hit/collected object. Movement is driven from the GameManager loop (not
- * a per-object UpdateEvent) so spawn -> move -> collide always run in that order.
+ * a per-object UpdateEvent) so the frame order stays deterministic.
  */
 import { GameConfig } from './GameConfig';
 import { ObjectPool } from './ObjectPool';
@@ -22,6 +22,9 @@ export interface ActiveEntry {
   transform: Transform;
   lane: number;
   kind: SpawnKind;
+  // Height the player must exceed (cm above ground) to pass this without a hit.
+  // Obstacles get GameConfig.obstacleClearHeight; pickups are 0 (height-agnostic).
+  clearHeight: number;
 }
 
 @component
@@ -59,9 +62,16 @@ export class ObstacleSpawner extends BaseScriptComponent {
    */
   tickGame(dt: number, speed: number, spawnInterval: number): void {
     this.spawnTimer += dt;
-    if (this.spawnTimer >= spawnInterval) {
-      this.spawnTimer = 0;
+    // Subtract whole intervals (don't reset to 0) so a frame hitch doesn't swallow
+    // the leftover time and skip a spawn. Bounded so a huge dt can't spawn a wall.
+    var guard = 0;
+    while (
+      this.spawnTimer >= spawnInterval &&
+      guard < GameConfig.maxSpawnsPerFrame
+    ) {
+      this.spawnTimer -= spawnInterval;
       this.spawnOne();
+      guard += 1;
     }
     this.advance(dt, speed);
   }
@@ -80,6 +90,7 @@ export class ObstacleSpawner extends BaseScriptComponent {
       transform: tf,
       lane: lane,
       kind: isPickup ? 'pickup' : 'obstacle',
+      clearHeight: isPickup ? 0 : GameConfig.obstacleClearHeight,
     });
   }
 
