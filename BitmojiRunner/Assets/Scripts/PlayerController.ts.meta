@@ -1,0 +1,57 @@
+- !<AssetImportMetadata/311c22d6-9f69-42dc-9b89-daa2bf32a9ba>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 0c23179f-1781-465c-b8b2-c1321fdbcf51
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 0c23179f-1781-465c-b8b2-c1321fdbcf51
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 929db552-4132-42ca-9276-0c64b79fc8e9
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/929db552-4132-42ca-9276-0c64b79fc8e9>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  ComponentUid: 1b4cd767-6fa5-4326-975d-166cb4c929f7
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    animationPlayer: false
+    hitClip: false
+    idleClip: false
+    jumpClip: false
+    runClip: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - animationPlayer: !<reference.AnimationPlayer> 00000000-0000-0000-0000-000000000000
+      runClip: run
+      jumpClip: jump
+      hitClip: hit
+      idleClip: idle
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input Component.AnimationPlayer animationPlayer
+    - '// @input string runClip = "run"'
+    - '// @input string jumpClip = "jump"'
+    - '// @input string hitClip = "hit"'
+    - '// @input string idleClip = "idle"'

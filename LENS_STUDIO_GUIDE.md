@@ -10,6 +10,36 @@ worked before moving on.
 
 ---
 
+## ⚡ Already done for you (open the pre-built project)
+
+A working project is **already assembled** at **`BitmojiRunner/BitmojiRunner.esproj`**.
+Open *that* in Lens Studio (File → Open) rather than creating a new one. In it,
+the following are **done and verified in the editor**:
+
+- All 11 scripts imported and **compiling clean** ("TypeScript compilation succeeded").
+- A `Game` object carrying `GameManager`, `ScoreManager`, `ObstacleSpawner`,
+  `CollisionSystem` — and a `Player` (placeholder capsule) carrying
+  `PlayerController` + `InputController`.
+- `Obstacle` and `Pickup` **prefabs** + a `SpawnRoot`.
+- The **entire gameplay graph wired**: GameManager → player/spawner/collision/score,
+  ObstacleSpawner → both prefabs + spawnRoot, CollisionSystem → spawner/player,
+  InputController → player.
+
+So you can **skip sections 0–5 and 7** below. What's left is the part that needs
+your Snapchat login and a little UI work:
+
+- **Section 3** — swap the placeholder capsule for your **Bitmoji** (needs login).
+- **Section 4** — nudge the **camera** to look down the lane.
+- **Section 6** — build the **UI** (score / lives text, start + game-over panels,
+  the two buttons), then add a `UIController` to the `Game` object and wire its
+  slots (it's the only component not yet added, because it needs those UI objects
+  to point at).
+- **Sections 8–10** — test, record, publish, commit.
+
+The full walkthrough is kept below for reference.
+
+---
+
 ## 0. Install Lens Studio
 
 1. Go to **ar.snap.com/download** and download **Lens Studio** (use **5.x** —

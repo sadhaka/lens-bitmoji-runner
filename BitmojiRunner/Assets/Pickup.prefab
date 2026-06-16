@@ -1,0 +1,43 @@
+- !<ObjectPrefab/eb28ff24-7cea-4182-883c-609e3559e610>
+  PackagePath: ""
+  objects:
+    - !<own> 6562f6b9-93fd-40c0-971b-d0b7d5ed8c53
+  LazyLoading: false
+  RetainAssets: true
+  PreviewEnvironment: !<reference> 00000000-0000-0000-0000-000000000000
+- !<SceneObject/6562f6b9-93fd-40c0-971b-d0b7d5ed8c53>
+  PrefabRemaps:
+    - 6562f6b9-93fd-40c0-971b-d0b7d5ed8c53: 6562f6b9-93fd-40c0-68e4-2f482a1273ac
+    - 89f7c45b-34e6-484c-ae76-e8a0d56221e2: 89f7c45b-34e6-484c-5189-175f2a9dde1d
+  Name: Pickup
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 10.000000, y: 10.000000, z: 10.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 89f7c45b-34e6-484c-ae76-e8a0d56221e2
+- !<RenderMeshVisual/89f7c45b-34e6-484c-ae76-e8a0d56221e2>
+  PrefabRemaps:
+    []
+  Name: Render Mesh Visual
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> 36c94df8-39db-4727-9011-d067b74d0ed3
+  Mesh: !<reference> 13060199-2060-47d9-a18e-1911753cc921
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}

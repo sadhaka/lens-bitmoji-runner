@@ -108,10 +108,13 @@ do* — single-responsibility boundaries written down, not just implied.
 
 ## Running it
 
-1. Open Lens Studio 5.x → **New Project**.
-2. Follow **[LENS_STUDIO_GUIDE.md](LENS_STUDIO_GUIDE.md)** to add a Bitmoji,
-   create the obstacle/pickup prefabs, attach these scripts, and wire the
-   `@input` slots in the Inspector.
+1. Open Lens Studio 5.x and **open `BitmojiRunner/BitmojiRunner.esproj`** — the
+   scene is pre-assembled: scripts imported and compiling, components attached,
+   and the full gameplay graph wired (a placeholder capsule stands in for the
+   Bitmoji).
+2. Follow **[LENS_STUDIO_GUIDE.md](LENS_STUDIO_GUIDE.md)** for what remains — swap
+   the capsule for your Bitmoji, build the score/lives UI, aim the camera, then
+   test and publish.
 3. Press the in-editor **Preview** (or pair the Snapchat app) to play.
 4. **File → Publish** to push it live; Lens Studio gives you a **Snapcode** you
    can scan to open it on a phone.

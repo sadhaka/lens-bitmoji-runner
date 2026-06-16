@@ -1,0 +1,51 @@
+- !<AssetImportMetadata/c8d06c27-b1ab-4842-8f61-611fbd43a26a>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 938d9535-1ab5-40bf-a8a6-cb6143db88bb
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 938d9535-1ab5-40bf-a8a6-cb6143db88bb
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 8ce953ff-1a53-4e06-a0e3-aa5e0ada6b1a
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/8ce953ff-1a53-4e06-a0e3-aa5e0ada6b1a>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  VersionPrerelease: ""
+  ComponentUid: e42626f8-8e73-4a57-bdf6-328e2ee123b7
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    obstaclePrefab: false
+    pickupPrefab: false
+    spawnRoot: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - obstaclePrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      pickupPrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      spawnRoot: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - // @input Asset.ObjectPrefab obstaclePrefab
+    - // @input Asset.ObjectPrefab pickupPrefab
+    - // @input SceneObject spawnRoot
